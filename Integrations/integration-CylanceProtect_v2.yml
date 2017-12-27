@@ -41,31 +41,45 @@ script:
 
     # CONSTANTS
     TIMEOUT = 300 # 5 minutes
-    URI_AUTH = "auth/v2/token"
-    URI_DEVICES = "devices/v2"
+
+    URI_AUTH = 'auth/v2/token'
+    URI_DEVICES = 'devices/v2'
+    URI_POLICIES = 'policies/v2'
+    URI_ZONES = 'zones/v2'
+    URI_THREATS = 'threats/v2'
+
+    SCOPE_DEVICE_LIST = 'device:list'
+    SCOPE_DEVICE_READ = 'device:read'
+    SCOPE_DEVICE_UPDATE = 'device:update'
+    SCOPE_POLICY_LIST = 'policy:list'
+    SCOPE_ZONE_CREATE = 'zone:create'
+    SCOPE_ZONE_LIST = 'zone:list'
+    SCOPE_ZONE_READ = 'zone:read'
+    SCOPE_ZONE_UPDATE = 'zone:update'
+    SCOPE_THREAT_READ = 'threat:read'
 
     # PREREQUISITES
     def load_server_url():
-        """ Cleans and loads the server url from the configuration """
-        url = demisto.params()["server"]
-        url = re.sub("/[\/]+$/", "", url)
-        url = re.sub("\/$", "", url)
+        ''' Cleans and loads the server url from the configuration '''
+        url = demisto.params()['server']
+        url = re.sub('/[\/]+$/', '', url)
+        url = re.sub('\/$', '', url)
         return url
 
 
     def load_proxy():
-        """ Loads the system configured proxy if enabled in configuration """
+        ''' Loads the system configured proxy if enabled in configuration '''
         proxy = {}
-        if demisto.params()["proxy"]:
-            proxy["http"] = os.environ["http_proxy"]
-            proxy["https"] = os.environ["https_proxy"]
+        if demisto.params()['proxy']:
+            proxy['http'] = os.environ['http_proxy']
+            proxy['https'] = os.environ['https_proxy']
         return proxy
 
 
     # GLOBALS
-    APP_ID = demisto.params()["app_id"]
-    APP_SECRET = demisto.params()["app_secret"]
-    TID = demisto.params()["tid"]
+    APP_ID = demisto.params()['app_id']
+    APP_SECRET = demisto.params()['app_secret']
+    TID = demisto.params()['tid']
     SERVER_URL = load_server_url()
     PROXY = load_proxy()
 
@@ -78,11 +92,12 @@ script:
         return epoch_time, epoch_timeout
 
 
-    def api_call(uri, method = 'post', headers = {}, body = {}):
-        res = requests.request(method, SERVER_URL + '/' + uri, headers=headers, data=json.dumps(body), proxies=PROXY)
+    def api_call(uri, method = 'post', headers = {}, body = {}, params = {}):
+        url = '%s/%s' % (SERVER_URL, uri)
+        res = requests.request(method, url, headers=headers, data=json.dumps(body), params=params)
         if res.status_code < 200 or res.status_code >= 300:
-                raise Exception("Got status code " + str(res.status_code) + " with body " + res.content + " with headers " + str(res.headers))
-        return json.loads(res.text)
+                raise Exception('Got status code ' + str(res.status_code) + ' with body ' + res.content + ' with headers ' + str(res.headers))
+        return json.loads(res.text) if res.text else res.ok
 
 
     def get_authentication_token(scope = None):
@@ -94,12 +109,12 @@ script:
 
         # Token claims
         claims = {
-            "exp": epoch_timeout,
-            "iat": epoch_time,
-            "iss": "http://cylance.com",
-            "sub": APP_ID,
-            "tid": TID,
-            "jti": token_id
+            'exp': epoch_timeout,
+            'iat': epoch_time,
+            'iss': 'http://cylance.com',
+            'sub': APP_ID,
+            'tid': TID,
+            'jti': token_id
         }
 
         if scope:
@@ -107,8 +122,8 @@ script:
 
         # Encode the token
         encoded = jwt.encode(claims, APP_SECRET, algorithm='HS256')
-        payload = {"auth_token": encoded}
-        headers = {"Content-Type": "application/json; charset=utf-8"}
+        payload = {'auth_token': encoded}
+        headers = {'Content-Type': 'application/json; charset=utf-8'}
 
         res = api_call(method='post', uri=URI_AUTH, body=payload, headers=headers)
         return res['access_token']
@@ -116,34 +131,478 @@ script:
 
     # FUNCTIONS
     def test():
-        if not get_authentication_token():
-            raise Exception('Unable to get a valid access token')
+        access_token = get_authentication_token()
+        if not access_token:
+            raise Exception('Unable to get access token')
         return 'ok'
 
 
     def get_devices():
         devices = get_devices_request()
+
+        # TODO: context
+
+        # TODO: human readable
+
         return devices
 
 
     def get_devices_request():
-        accessToken = get_authentication_token(scope='device:list')
+        access_token = get_authentication_token(scope=SCOPE_DEVICE_LIST)
         headers = {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + accessToken
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        params = { # TODO: define correct params?
+            # 'page': 1,
+            # 'page_size': 10
+        }
+        res = api_call(uri=URI_DEVICES, method='get', headers=headers, params=params)
+        return res
+
+
+    def get_device():
+        device_id = demisto.args()['id']
+        device = get_device_request(device_id)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return devices
+
+
+    def get_device_request(device_id):
+        access_token = get_authentication_token(scope=SCOPE_DEVICE_READ)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        uri = '%s/%s' % (URI_DEVICES, device_id)
+        res = api_call(uri=uri, method='get', headers=headers)
+        return res
+
+
+    def update_device():
+        device_id = demisto.args()['id']
+
+        # What details to update?
+        name = demisto.args()['name'] if 'name' in demisto.args() else None
+        policy_id = demisto.args()['policy_id'] if 'policy_id' in demisto.args() else None
+        add_zones = demisto.args()['addZones'] if 'addZones' in demisto.args() else None
+        remove_zones = demisto.args()['removeZones'] if 'removeZones' in demisto.args() else None
+
+        res = update_device_request(device_id, name, policy_id, add_zones, remove_zones)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return res
+
+
+    def update_device_request(device_id, name = None, policy_id = None, add_zones = None, remove_zones = None):
+        access_token = get_authentication_token(scope=SCOPE_DEVICE_UPDATE)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
         }
 
-        res = api_call(uri=URI_DEVICES, method='get', headers=headers)
+        body = {}
+        if name:
+            body['name'] = name
+        if policy_id:
+            body['policy_id'] = policy_id
+        if add_zones:
+            body['add_zone_ids'] = add_zones
+        if remove_zones:
+            body['remove_zone_ids'] = remove_zones
+
+        # Do we have anything to update?
+        if not body:
+            raise Exception('No changes detected')
+
+        uri = '%s/%s' % (URI_DEVICES, device_id)
+        res = api_call(uri=uri, method='put', headers=headers, body=body)
+        return res
+
+
+    def get_device_threats():
+        device_id = demisto.args()['id']
+        threats = get_device_threats_request(device_id)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return threats
+
+
+    def get_device_threats_request(device_id):
+        access_token = get_authentication_token(scope=SCOPE_THREAT_READ) # TODO: find correct scope (or mail them)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        params = {  # TODO: define correct params?
+            # 'page': 1,
+            # 'page_size': 10
+        }
+        uri = '%s/%s/threats' % (URI_DEVICES, device_id)
+        res = api_call(uri=uri, method='get', headers=headers, params=params)
+        return res
+
+
+    def get_policies():
+        policies = get_policies_request()
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return policies
+
+
+    def get_policies_request():
+        access_token = get_authentication_token(scope=SCOPE_POLICY_LIST)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        params = {  # TODO: define correct params?
+            # 'page': 1,
+            # 'page_size': 10
+        }
+        res = api_call(uri=URI_POLICIES, method='get', headers=headers, params=params)
+        return res
+
+
+    def create_zone():
+        name = demisto.args()['name']
+        policy_id = demisto.args()['policy_id']
+        criticality = demisto.args()['criticality']   # TODO: make it a list 'Low', 'Medium', 'High', should assert?
+
+        res = create_zone_request(name, policy_id, criticality)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return res
+
+
+    def create_zone_request(name, policy_id, criticality):
+        access_token = get_authentication_token(scope=SCOPE_ZONE_CREATE)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        body = {
+            'name': name,
+            'policy_id': policy_id,
+            'criticality': criticality
+        }
+        res = api_call(uri=URI_ZONES, method='post', headers=headers, body=body)
+        return res
+
+
+    def get_zones():
+        zones = get_zones_request()
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return zones
+
+
+    def get_zones_request():
+        access_token = get_authentication_token(scope=SCOPE_ZONE_LIST)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        params = {  # TODO: define correct params?
+            # 'page': 1,
+            # 'page_size': 10
+        }
+        res = api_call(uri=URI_ZONES, method='get', headers=headers, params=params)
+        return res
+
+
+    def get_zone():
+        zone_id = demisto.args()['id']
+        zone = get_zone_request(zone_id)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return zone
+
+    def get_zone_request(zone_id):
+        access_token = get_authentication_token(scope=SCOPE_ZONE_READ)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        uri = '%s/%s' % (URI_ZONES, zone_id)
+        res = api_call(uri=uri, method='get', headers=headers)
+        return res
+
+
+    def update_zone():
+        zone_id = demisto.args()['id']
+
+        # Get current zone and fill in reequires missing arguments
+        currentZone = get_zone_request(zone_id)
+
+        # What details to update?
+        name = demisto.args()['name'] if 'name' in demisto.args() else currentZone['name']
+        policy_id = demisto.args()['policy_id'] if 'policy_id' in demisto.args() else currentZone['policy_id']
+        criticality = demisto.args()['criticality'] if 'criticality' in demisto.args() else currentZone['criticality']  # TODO: make it a list 'Low', 'Medium', 'High', should assert?
+
+        res = update_zone_reqeust(zone_id, name, policy_id, criticality)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return res
+
+
+    def update_zone_reqeust(zone_id, name, policy_id, criticality):
+        access_token = get_authentication_token(scope=SCOPE_ZONE_UPDATE)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+
+        body = {}
+        if name:
+            body['name'] = name
+        if policy_id:
+            body['policy_id'] = policy_id
+        if criticality:
+            body['criticality'] = criticality
+
+        # Do we have anything to update?
+        if not body:
+            raise Exception('No changes detected')
+
+        uri = '%s/%s' % (URI_ZONES, zone_id)
+        res = api_call(uri=uri, method='put', headers=headers, body=body)
+        return res
+
+
+    def get_threat():
+        hash = demisto.args()['hash'] # TODO: document sha256 and also NOT md5
+        threat = get_threat_request(hash)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return threat
+
+
+    def get_threat_request(hash):
+        access_token = get_authentication_token(scope=SCOPE_THREAT_READ)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        uri = '%s/%s' % (URI_THREATS, hash)
+        res = api_call(uri=uri, method='get', headers=headers)
+        return res
+
+
+    def get_threat_devices():
+        hash = demisto.args()['hash'] # TODO: document sha256 and also NOT md5
+        threat = get_threat_devices_request(hash)
+
+        # TODO: context
+
+        # TODO: human readable
+
+        return threat
+
+
+    def get_threat_devices_request(hash):
+        access_token = get_authentication_token(scope='devivcethreat:read') # TODO: find correct scope (or mail them)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + access_token
+        }
+        params = {  # TODO: define correct params?
+            # 'page': 1,
+            # 'page_size': 10
+        }
+        uri = '%s/%s/devices' % (URI_THREATS, hash)
+        res = api_call(uri=uri, method='get', headers=headers, params=params)
         return res
 
 
     # EXECUTION
-    if demisto.command() == "test-module":
+    if demisto.command() == 'test-module':
         test()
         exit(0)
 
-    if demisto.command() == "cylance-protect-2-get-devices":
+    if demisto.command() == 'cylance-protect-get-devices':
         get_devices()
         exit(0)
+
+    if demisto.command() == 'cylance-protect-get-device':
+        get_device()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-update-devices':
+        update_device()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-get-device-threats':
+        get_device_threats()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-get-policies':
+        get_policies()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-create-zone':
+        create_zone()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-get-zones':
+        get_zones()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-get-zone':
+        get_zone()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-update-zone':
+        update_zone()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-get-threat':
+        get_threat()
+        exit(0)
+
+    if demisto.command() == 'cylance-protect-get-threat-devices':
+        get_threat_devices()
+        exit(0)
   type: python
+  commands:
+  - name: cylance-protect-get-devices
+    arguments:
+    - name: pageNumber
+      description: 'Default: 1'
+    - name: pageSize
+      description: 'Default: 100'
+    description: Allows a caller to request a page with a list of Console device resources
+      belongings to a Tenant, sorted by registration (created) date in descending
+      order (most recent device registered listed first)
+  - name: cylance-protect-get-device
+    arguments:
+    - name: id
+      required: true
+      default: true
+      description: The device ID
+    description: Allows a caller to request a specific device resource belonging to
+      a Tenant
+  - name: cylance-protect-update-devices
+    arguments:
+    - name: id
+      required: true
+      default: true
+      description: The device ID
+    - name: name
+      description: The device name
+    - name: policyId
+      description: The policy ID
+    - name: addZones
+      description: Zones to add
+      isArray: true
+    - name: removeZones
+      description: Zones to remove
+      isArray: true
+    description: Allows a caller to update a specific Console device resource belonging
+      to a Tenant
+  - name: cylance-protect-get-device-threats
+    arguments:
+    - name: id
+      required: true
+      default: true
+      description: The device ID
+    - name: pageNumber
+      description: 'Default: 1'
+    - name: pageSize
+      description: 'Default: 100, Max: 200'
+    description: Allows a caller to request a page with a list of threats found on
+      a specific device
+  - name: cylance-protect-get-policies
+    arguments:
+    - name: pageNumber
+      description: 'Default: 1'
+    - name: pageItems
+      description: 'Default: 100'
+    description: Allows the caller to get a list of tenant policies
+  - name: cylance-protect-create-zone
+    arguments:
+    - name: name
+      required: true
+      description: The name of the zone
+    - name: policyId
+      required: true
+      description: The unique ID for the policy assigned to the Zone
+    - name: criticality
+      required: true
+      auto: PREDEFINED
+      predefined:
+      - Low
+      - Medium
+      - High
+      description: The criticality value of the Zone
+    description: Create (add) a zone to your Console
+  - name: cylance-protect-get-zones
+    arguments:
+    - name: pageNumber
+      description: 'Default: 1'
+    - name: pageItems
+      description: 'Default: 100'
+    description: Request zone information for your organization. This will return
+      the top 100 records
+  - name: cylance-protect-get-zone
+    arguments:
+    - name: id
+      required: true
+      default: true
+      description: The zone ID
+    description: Request zone information for a specific zone in your organization
+  - name: cylance-protect-update-zone
+    arguments:
+    - name: id
+      required: true
+      default: true
+      description: The zone ID
+    - name: name
+      description: The name of the zone
+    - name: policyId
+      description: The unique ID for the policy assigned to the Zone
+    - name: criticality
+      description: The criticality value of the Zone
+    description: Update a zone in your organization
+  - name: cylance-protect-get-threat
+    arguments:
+    - name: hash
+      required: true
+      default: true
+      description: The SHA256 hash of the threat
+    description: Request threat details for a specific threat
+  - name: cylance-protect-get-threat-devices
+    arguments:
+    - name: hash
+      required: true
+      default: true
+      description: The SHA256 hash of the threat
   dockerimage: demisto/cylance_protect_v2
