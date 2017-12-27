@@ -40,7 +40,7 @@ script:
     from datetime import datetime, timedelta
 
     # CONSTANTS
-    TIMEOUT = 300 # 5 minutes
+    TOKEN_TIMEOUT = 300 # 5 minutes
 
     URI_AUTH = 'auth/v2/token'
     URI_DEVICES = 'devices/v2'
@@ -85,14 +85,21 @@ script:
 
     # HELPERS
     def generate_jwt_times():
+        '''
+        Generates the epoch time window in which the token will be valid
+        Returns the current timestamp and the timeout timestamp (in that order)
+        '''
         now = datetime.utcnow()
-        timeout_datetime = now + timedelta(seconds=TIMEOUT)
+        timeout_datetime = now + timedelta(seconds=TOKEN_TIMEOUT)
         epoch_time = int((now - datetime(1970, 1, 1)).total_seconds())
         epoch_timeout = int((timeout_datetime - datetime(1970, 1, 1)).total_seconds())
         return epoch_time, epoch_timeout
 
 
     def api_call(uri, method = 'post', headers = {}, body = {}, params = {}):
+        '''
+        Makes an API call to the server URL with the supplied uri, method, headers, body and params
+        '''
         url = '%s/%s' % (SERVER_URL, uri)
         res = requests.request(method, url, headers=headers, data=json.dumps(body), params=params)
         if res.status_code < 200 or res.status_code >= 300:
@@ -101,6 +108,10 @@ script:
 
 
     def get_authentication_token(scope = None):
+        '''
+        Generates a JWT authorization token with an optional scope and queries the API for an access token
+        Returns the received API access token
+        '''
         # Generate token ID
         token_id = str(uuid.uuid4())
 
@@ -138,7 +149,10 @@ script:
 
 
     def get_devices():
-        devices = get_devices_request()
+        page = demisto.args()['pageNumber'] if 'pageNumber' in demisto.args() else None
+        page_size = demisto.args()['pageSize'] if 'pageSize' in demisto.args() else None
+
+        devices = get_devices_request(page, page_size)
 
         # TODO: context
 
@@ -147,16 +161,19 @@ script:
         return devices
 
 
-    def get_devices_request():
+    def get_devices_request(page = None, page_size = None):
         access_token = get_authentication_token(scope=SCOPE_DEVICE_LIST)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + access_token
         }
-        params = { # TODO: define correct params?
-            # 'page': 1,
-            # 'page_size': 10
-        }
+
+        params = {}
+        if page:
+            params['page'] = page
+        if page_size:
+            params['page_size'] = page_size
+
         res = api_call(uri=URI_DEVICES, method='get', headers=headers, params=params)
         return res
 
@@ -188,7 +205,7 @@ script:
 
         # What details to update?
         name = demisto.args()['name'] if 'name' in demisto.args() else None
-        policy_id = demisto.args()['policy_id'] if 'policy_id' in demisto.args() else None
+        policy_id = demisto.args()['policyId'] if 'policyId' in demisto.args() else None
         add_zones = demisto.args()['addZones'] if 'addZones' in demisto.args() else None
         remove_zones = demisto.args()['removeZones'] if 'removeZones' in demisto.args() else None
 
@@ -229,7 +246,10 @@ script:
 
     def get_device_threats():
         device_id = demisto.args()['id']
-        threats = get_device_threats_request(device_id)
+        page = demisto.args()['pageNumber'] if 'pageNumber' in demisto.args() else None
+        page_size = demisto.args()['pageSize'] if 'pageSize' in demisto.args() else None
+
+        threats = get_device_threats_request(device_id, page, page_size)
 
         # TODO: context
 
@@ -238,23 +258,29 @@ script:
         return threats
 
 
-    def get_device_threats_request(device_id):
+    def get_device_threats_request(device_id, page = None, page_size = None):
         access_token = get_authentication_token(scope=SCOPE_THREAT_READ) # TODO: find correct scope (or mail them)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + access_token
         }
-        params = {  # TODO: define correct params?
-            # 'page': 1,
-            # 'page_size': 10
-        }
+
+        params = {}
+        if page:
+            params['page'] = page
+        if page_size:
+            params['page_size'] = page_size
+
         uri = '%s/%s/threats' % (URI_DEVICES, device_id)
         res = api_call(uri=uri, method='get', headers=headers, params=params)
         return res
 
 
     def get_policies():
-        policies = get_policies_request()
+        page = demisto.args()['pageNumber'] if 'pageNumber' in demisto.args() else None
+        page_size = demisto.args()['pageSize'] if 'pageSize' in demisto.args() else None
+
+        policies = get_policies_request(page, page_size)
 
         # TODO: context
 
@@ -263,16 +289,19 @@ script:
         return policies
 
 
-    def get_policies_request():
+    def get_policies_request(page = None, page_size = None):
         access_token = get_authentication_token(scope=SCOPE_POLICY_LIST)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + access_token
         }
-        params = {  # TODO: define correct params?
-            # 'page': 1,
-            # 'page_size': 10
-        }
+
+        params = {}
+        if page:
+            params['page'] = page
+        if page_size:
+            params['page_size'] = page_size
+
         res = api_call(uri=URI_POLICIES, method='get', headers=headers, params=params)
         return res
 
@@ -307,7 +336,10 @@ script:
 
 
     def get_zones():
-        zones = get_zones_request()
+        page = demisto.args()['pageNumber'] if 'pageNumber' in demisto.args() else None
+        page_size = demisto.args()['pageSize'] if 'pageSize' in demisto.args() else None
+
+        zones = get_zones_request(page, page_size)
 
         # TODO: context
 
@@ -316,16 +348,19 @@ script:
         return zones
 
 
-    def get_zones_request():
+    def get_zones_request(page = None, page_size = None):
         access_token = get_authentication_token(scope=SCOPE_ZONE_LIST)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + access_token
         }
-        params = {  # TODO: define correct params?
-            # 'page': 1,
-            # 'page_size': 10
-        }
+
+        params = {}
+        if page:
+            params['page'] = page
+        if page_size:
+            params['page_size'] = page_size
+
         res = api_call(uri=URI_ZONES, method='get', headers=headers, params=params)
         return res
 
@@ -418,8 +453,11 @@ script:
 
 
     def get_threat_devices():
-        hash = demisto.args()['hash'] # TODO: document sha256 and also NOT md5
-        threat = get_threat_devices_request(hash)
+        threat_hash = demisto.args()['hash'] # TODO: document sha256 and also NOT md5
+        page = demisto.args()['pageNumber'] if 'pageNumber' in demisto.args() else None
+        page_size = demisto.args()['pageSize'] if 'pageSize' in demisto.args() else None
+
+        threat = get_threat_devices_request(threat_hash, page, page_size)
 
         # TODO: context
 
@@ -428,17 +466,20 @@ script:
         return threat
 
 
-    def get_threat_devices_request(hash):
+    def get_threat_devices_request(threat_hash, page = None, page_size = None):
         access_token = get_authentication_token(scope='devivcethreat:read') # TODO: find correct scope (or mail them)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + access_token
         }
-        params = {  # TODO: define correct params?
-            # 'page': 1,
-            # 'page_size': 10
-        }
-        uri = '%s/%s/devices' % (URI_THREATS, hash)
+
+        params = {}
+        if page:
+            params['page'] = page
+        if page_size:
+            params['page_size'] = page_size
+
+        uri = '%s/%s/devices' % (URI_THREATS, threat_hash)
         res = api_call(uri=uri, method='get', headers=headers, params=params)
         return res
 
