@@ -651,4 +651,5 @@ script:
       required: true
       default: true
       description: The SHA256 hash of the threat
+    description: Allows a caller to request  a list of devices on a specific threat
   dockerimage: demisto/cylance_protect_v2
