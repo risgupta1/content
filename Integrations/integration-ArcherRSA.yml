@@ -1585,10 +1585,10 @@ script:
     arguments:
     - name: reportGuid
       required: true
-      description: The Guid of the report
+      description: The GUID of the report
     - name: maxResults
       defaultValue: "100"
-      description: Maximum pages of the reports	
+      description: Maximum pages of the reports
     description: Performs statistic search by report Guid
   - name: archer-get-search-options-by-guid
     arguments:
@@ -1602,7 +1602,7 @@ script:
       description: The GUID of the report
       required: true
     - name: maxResults
-      description: Maximum pages of the records	
+      description: Maximum pages of the records
       defaultValue: "1"
     description: Search records by report Guid
   isfetch: true
