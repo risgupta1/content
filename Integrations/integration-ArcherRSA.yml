@@ -129,7 +129,7 @@ script:
     }
     function parseRecordsXml(token, response, mapping) {
         var parsedJson = extractObjectFromXML(response, 'Envelope.Body.ExecuteSearchResponse.ExecuteSearchResult');
-        var records = parsedJson.Records.Record;
+        var records = dq(parsedJson, 'Records.Record');
         if (!records) {
             return [];
         }
@@ -164,7 +164,9 @@ script:
                         var newModuleId = innerRecordModuleId;
                         args.applicationId = newModuleId;
                         var newMapping = createMapping(token);
-                        for (var attrname in newMapping) { mapping[attrname] = newMapping[attrname]; }
+                        for (var attrname in newMapping) { 
+                            mapping[attrname] = newMapping[attrname]; 
+                        }
                         seenModuleIds[newModuleId] = newModuleId;
                     }
                     innerRecord.Record = getRecord(commands.getRecord, token, mapping, innerRecordContentId, innerRecordModuleId).keyValsForFetch;
@@ -270,10 +272,11 @@ script:
             return JSON.parse(result.Body);
         }
     }
-    function searchSendSoapRequest(cmd, token, appId, fields, maxResults, fieldIdToSearchOn, fieldNameToSearchOn, searchValue, fieldIdToSearchOn, isDescending, numericOperator, dateOperator, pageNumber) {
+
+    function searchSendSoapRequest(cmd, token, appId, fields, maxResults, fieldIdToSearchOn, fieldNameToSearchOn, searchValue, sortByFieldId, isDescending, numericOperator, dateOperator, pageNumber) {
         var currentToken = token;
         for(var i = 0; i<10; i++){
-            var soap = getContentsByAppIdRequest(currentToken, appId, fields, maxResults, fieldIdToSearchOn, fieldNameToSearchOn, searchValue, fieldIdToSearchOn, isDescending, numericOperator, dateOperator, pageNumber);
+            var soap = getContentsByAppIdRequest(currentToken, appId, fields, maxResults, fieldIdToSearchOn, fieldNameToSearchOn, searchValue, sortByFieldId, fieldIdToSearchOn, isDescending, numericOperator, dateOperator, pageNumber);
             var SOAPAction = 'http://archer-tech.com/webservices/ExecuteSearch';
             var result = soapRequestSender(cmd, soap, SOAPAction);
             if (result.StatusCode < 200 || result.StatusCode >= 300) {
@@ -718,8 +721,10 @@ script:
             keyValsForFetch: keyValsForFetch,
             ContentsFormat: formats.json,
             ReadableContentsFormat: formats.markdown,
-            HumanReadable: tableToMarkdown(command, nameToValue) + '\n\n' + innerRecordsMarkdown
-            EntryContext: {'Archer.Content(true)': createContentContext(contentId, nameToValue)}
+            HumanReadable: tableToMarkdown(command, nameToValue) + '\n\n' + innerRecordsMarkdown,
+            EntryContext: {
+              'Archer.Content(true)': createContentContext(contentId, nameToValue)
+            }
         };
     }
     function createInnerRecordsHumanReadable(tables){
@@ -1443,16 +1448,17 @@ script:
     arguments:
     - name: reportGuid
       required: true
-      description: The Guid of the report
+      description: The GUID of the report
     - name: maxResults
       defaultValue: "100"
-      description: Max pages of the reports
+      description: Maximum pages of the reports
     description: Performs statistic search by report Guid
   - name: archer-get-search-options-by-guid
     arguments:
     - name: reportGuid
       description: The GUID of the report
       required: true
+      description: The GUID of the report
     description: 'Getting search criteria by report GUID '
   - name: archer-search-records-by-report
     arguments:
@@ -1460,7 +1466,7 @@ script:
       description: The GUID of the report
       required: true
     - name: maxResults
-      description: Max pages of the records
+      description: Maximum pages of the records
       defaultValue: "1"
     description: Search records by report Guid
   isfetch: true
