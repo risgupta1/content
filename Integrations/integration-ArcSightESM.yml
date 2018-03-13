@@ -381,6 +381,7 @@ script:
                 'EventIDs': 'eventIDs',
                 'Action': 'action',
                 'Stage': 'stage',
+                'Severity': 'consequenceSeverity'
                 'CaseID': 'resourceid',
                 'CreatedTime': 'createdTimestamp=Date(val)'
             })),
@@ -456,10 +457,10 @@ script:
         var returnObject;
         if (json && json['qvs.getMatrixDataResponse'] && json['qvs.getMatrixDataResponse']['qvs.return']) {
             // ArcSight ESM version 6.7 & 6.9 rest API supports qvs.getMatrixDataResponse
-            returnObject = json['qvs.getMatrixDataResponse']['qvs.return'];    
+            returnObject = json['qvs.getMatrixDataResponse']['qvs.return'];
         } else if (json && json['que.getMatrixDataResponse'] && json['que.getMatrixDataResponse']['que.return']) {
             // ArcSight ESM version 6.1 rest API supports que.getMatrixDataResponse
-            returnObject = json['que.getMatrixDataResponse']['que.return'];    
+            returnObject = json['que.getMatrixDataResponse']['que.return'];
         } else {
             throw 'Failed to get results for query viewer ' + queryViewerId + '.\nRaw response body: ' + JSON.stringify(json);
         }
@@ -780,7 +781,12 @@ script:
         }
 
         var updatedCase = currentCase;
-        updatedCase.stage = args.stage;
+        if(args.stage){
+            updatedCase.stage = args.stage;
+        }
+        if(args.severity){
+            updatedCase.consequenceSeverity = args.severity;
+        }
         var soapReq = {
             'cas.update': {
                 'cas.authToken': args.authToken,
@@ -1119,15 +1125,15 @@ script:
       default: true
       description: commands.server.arcsight.arguments.queryid.description
     - name: onlyColumns
-      description: If true will return only the columns of the query. If false will return the column headers and all query results.
       auto: PREDEFINED
       predefined:
       - "true"
       - "false"
+      description: If true will return only the columns of the query. If false will
+        return the column headers and all query results.
       defaultValue: "true"
     description: commands.server.arcsight.query.description
   - name: as-add-entries
-    description: Import/add new entries to Active List. 
     arguments:
     - name: resourceId
       required: true
@@ -1141,19 +1147,15 @@ script:
     description: Add new entries to Active List
     execution: true
   - name: as-clear-entries
-    description: Deletes all the entries in the Active List
     arguments:
     - name: resourceId
-      description: Resource id of specific Active List
       required: true
       description: resource id of Active list
     description: Clean all entries in the Active List
     execution: true
   - name: as-get-entries
-    description: Returns the entries which the Active List contains
     arguments:
     - name: resourceId
-      description: Resource id of specific Active List
       required: true
       description: resource id of Active list
     - name: entryFilter
@@ -1164,15 +1166,15 @@ script:
         entries
     description: Get all entries from Active List
   - name: as-get-security-events
-    description: Returns security event object by providing id
     arguments:
     - name: startDate
       description: 'Start time filter. Example: 2017-05-22T10:00:00'
     - name: endDate
       description: 'End time filter. Example: 2017-05-22T10:00:00'
     - name: ids
-      description: 'ID or multiple ids separated by comma of security events. Event ID is ArcSight is always a number. Example: 13906590'
       required: true
+      description: 'ID or multiple ids separated by comma of security events. Event
+        ID is ArcSight is always a number. Example: 13906590'
     outputs:
     - contextPath: ArcSightESM.SecurityEvents
       description: List of security events
@@ -1190,8 +1192,8 @@ script:
   - name: as-get-case-event-ids
     arguments:
     - name: caseId
-      description: 'Case ID. Example: 7e6LEbF8BABCfA-dlp1rl1A=='
       required: true
+      description: 'Case ID. Example: 7e6LEbF8BABCfA-dlp1rl1A=='
     outputs:
     - contextPath: ArcSightESM.CaseEvents
       description: Map of caseId => related event ids
@@ -1212,6 +1214,15 @@ script:
       - FOLLOW_UP
       - INITIAL
       description: The stage of case
+    - name: severity
+      auto: PREDEFINED
+      predefined:
+      - NONE
+      - INSIGNIFICANT
+      - MARGINAL
+      - CRITICAL
+      - CATASTROPHIC
+      description: The consequence severity of the case
     outputs:
     - contextPath: ArcSightESM.Cases
       description: List of cases
