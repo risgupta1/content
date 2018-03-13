@@ -1242,3 +1242,4 @@ script:
     execution: true
   isfetch: true
 hidden: false
+releaseNotes: "option to update case severity"
