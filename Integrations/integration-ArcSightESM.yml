@@ -381,7 +381,7 @@ script:
                 'EventIDs': 'eventIDs',
                 'Action': 'action',
                 'Stage': 'stage',
-                'Severity': 'consequenceSeverity'
+                'Severity': 'consequenceSeverity',
                 'CaseID': 'resourceid',
                 'CreatedTime': 'createdTimestamp=Date(val)'
             })),
