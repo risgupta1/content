@@ -63,10 +63,10 @@ tasks:
       version: -1
       name: Get case
       description: Get a specific case from ESM
-      script: ArcSight ESM_copy|||as-get-case
+      script: ArcSight ESM|||as-get-case
       type: regular
       iscommand: true
-      brand: ArcSight ESM_copy
+      brand: ArcSight ESM
     nexttasks:
       '#none#':
       - "4"
@@ -90,10 +90,10 @@ tasks:
       version: -1
       name: Update case severity
       description: Updates a case
-      script: ArcSight ESM_copy|||as-update-case
+      script: ArcSight ESM|||as-update-case
       type: regular
       iscommand: true
-      brand: ArcSight ESM_copy
+      brand: ArcSight ESM
     nexttasks:
       '#none#':
       - "2"
@@ -155,10 +155,10 @@ tasks:
       version: -1
       name: Update case severity
       description: Updates a case
-      script: ArcSight ESM_copy|||as-update-case
+      script: ArcSight ESM|||as-update-case
       type: regular
       iscommand: true
-      brand: ArcSight ESM_copy
+      brand: ArcSight ESM
     nexttasks:
       '#none#':
       - "6"
