@@ -1541,6 +1541,33 @@ script:
             }
         }
 
+        function getContentIdsFromIncIds(applicationId, incidentIds){
+            // gets the content ids of the respective incident ids from Archer
+
+            var contentIdsArr = [];
+            var displayFields = params.fieldsToDisplay || "Incident ID";
+            var incidentIdsString = "";
+            var incidentIdsArr = incidentIds.split(",");
+            for(var i = 0; i <incidentIdsArr.length ; i++){
+                incidentIdsString += "INC-" + incidentIdsArr[i] + " ";
+            }
+
+            var levelId = getLevelsByApplicationId(applicationId);
+            var nameToFieldMapping = createMappingNameToFieldId(levelId);
+
+            var response = getContentIdsByIncIdsSendSoapRequest(applicationId, displayFields, incidentIdsString, levelId, nameToFieldMapping[displayFields].Id);
+            var rawResponse = JSON.parse(x2j(response));
+            var parsedJSON = extractObjectFromXML(rawResponse, 'Envelope.Body.ExecuteSearchResponse.ExecuteSearchResult');
+
+            if (!Array.isArray(parsedJSON)){
+                var recordsArr = verifyOrMakeArray(parsedJSON.Records.Record);
+                recordsArr.forEach(function (record){
+                    contentIdsArr.push(record['-contentId']);
+                });
+            }
+
+            return contentIdsArr;
+        }
         // integration commands functions
 
         function createRecord(command, dataArgs) {
@@ -1594,6 +1621,10 @@ script:
             var appId = dataArgs.applicationId;
             var contentId = dataArgs.contentId;
             var fieldsToValue = JSON.parse(dataArgs.fieldsToValues);
+            var incidentId = dataArgs.incidentId;
+            if (incidentId){
+                contentId = getContentIdsFromIncIds(appId, incidentId)[0];
+            }
 
             if (fieldsToValue === null || typeof fieldsToValue !== 'object') {
                 throw 'Invalid Argument fieldToValue';
@@ -1645,7 +1676,11 @@ script:
             var applicationId = applicationId || args.applicationId;
             var response;
             var attachedFilesMarkdown;
+            var incidentId = args.incidentId;
 
+            if (incidentId){
+                contentId = getContentIdsFromIncIds(appId, incidentId)[0];
+            }
             extendAppIdMapping(applicationId);
             var rawResponse = getRecordSendSoapRequest(command, applicationId, contentId);
             if (typeof rawResponse !== 'string' || rawResponse.length == 0) {
@@ -1872,6 +1907,10 @@ script:
 
             var appId = dataArgs.applicationId;
             var contentId = dataArgs.contentId;
+            var incidentId = dataArgs.incidentId;
+            if (incidentId){
+                contentId = getContentIdsFromIncIds(appId, incidentId)[0];
+            }
             var token = getAuthToken();
             var soap =  deleteContentSoapRequest(token, appId, contentId);
             var SOAPAction = 'http://archer-tech.com/webservices/DeleteRecord';
@@ -2099,29 +2138,14 @@ script:
 
             var incidentIds = args.incidentIds;
             var incidents = [];
-            var contentIdsArr = [];
-
-            var incidentIdsString = "";
+            var contentIdsArr;
             var incidentIdsArr = incidentIds.split(",");
-            for(var i = 0; i <incidentIdsArr.length ; i++){
-                incidentIdsString += "INC-" + incidentIdsArr[i] + " ";
-            }
-
             var applicationId = args.applicationId;
-            var displayFields = params.fieldsToDisplay || "Incident ID";
 
-            var levelId = getLevelsByApplicationId(applicationId);
-            var nameToFieldMapping = createMappingNameToFieldId(levelId);
+            var contentIdsFromInc = getContentIdsFromIncIds(applicationId, incidentIds);
 
-            var response = getContentIdsByIncIdsSendSoapRequest(applicationId, displayFields, incidentIdsString, levelId, nameToFieldMapping[displayFields].Id);
-            var rawResponse = JSON.parse(x2j(response));
-            var parsedJSON = extractObjectFromXML(rawResponse, 'Envelope.Body.ExecuteSearchResponse.ExecuteSearchResult');
-
-            if (!Array.isArray(parsedJSON)){
-                var recordsArr = verifyOrMakeArray(parsedJSON.Records.Record);
-                recordsArr.forEach(function (record){
-                    contentIdsArr.push(record['-contentId']);
-                });
+            if (contentIdsFromInc.length > 0){
+                contentIdsArr = contentIdsFromInc;
             } else {
                 contentIdsArr = incidentIdsArr;
             }
@@ -2221,7 +2245,6 @@ script:
   - name: archer-update-record
     arguments:
     - name: contentId
-      required: true
       description: The Content (record) ID to update
     - name: applicationId
       required: true
@@ -2230,16 +2253,18 @@ script:
       required: true
       description: 'Record fields in JSON format: { Name1: Value1, Name2: Value2 }.
         Field name is case sensitive.'
+    - name: incidentId
+      description: 'The incident id of the record. For example: id=12345 for INC-12345'
     description: Updates existing content record in the given application.
   - name: archer-get-record
     arguments:
     - name: contentId
-      required: true
-      description: 'The incident (record) ID to get details for (for example: id=12345
-        for INC-12345)'
+      description: The incident (record) ID to get details for
     - name: applicationId
       required: true
       description: ID of the application to get record from
+    - name: incidentId
+      description: 'The incident id of the record. For example: id=12345 for INC-12345'
     outputs:
     - contextPath: Archer.Content.Id
       description: Content Id of the record
@@ -2343,8 +2368,9 @@ script:
       required: true
       description: ID of the application to delete record in
     - name: contentId
-      required: true
       description: The Content (record) ID to delete
+    - name: incidentId
+      description: 'The incident id of the record. For example: id=12345 for INC-12345'
     description: Delete existing content record in the given application.
   - name: archer-value-list-for-field
     arguments:
