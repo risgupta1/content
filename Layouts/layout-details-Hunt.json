@@ -1,9 +1,9 @@
 {
-	"releaseNotes": "relase notes of access details",
-	"typeId": "Access",
+	"releaseNotes": "relase notes of Hunt details",
+	"typeId": "Hunt",
 	"kind": "details",
 	"layout": {
-		"id": "Access",
+		"id": "Hunt",
 		"version": 36,
 		"modified": "2018-03-24T17:44:51.608944914+03:00",
 		"name": "",
