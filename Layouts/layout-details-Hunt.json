@@ -79,13 +79,6 @@
 						"modified": "0001-01-01T00:00:00Z",
 						"fieldId": "incident_a1",
 						"isVisible": true
-					},
-					{
-						"id": "",
-						"version": 0,
-						"modified": "0001-01-01T00:00:00Z",
-						"fieldId": "incident_a2",
-						"isVisible": true
 					}
 				],
 				"description": "",
