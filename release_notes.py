@@ -433,9 +433,6 @@ releaseNoteGenerator = {
     "Misc": ReputationContent(),
     "Dashboards": DashboardContent(),
     "Widgets": WidgetContent(),
-    "IncidentFields": IncidentFieldContent(),
-    "Layouts": LayoutContent(),
-    "Classifiers": ClassifierContent()
 }
 
 
