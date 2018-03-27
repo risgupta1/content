@@ -1,0 +1,156 @@
+{
+	"id": "286bceb6-2add-4025-8cb7-51c229af64eb",
+	"version": -1,
+	"modified": "2018-03-27T19:30:52.499595439+03:00",
+	"defaultIncidentType": "",
+	"instanceId": "af409445-a86f-44fa-824c-a4f42cf31dd7",
+	"mapping": {
+		"Exfiltration": {
+			"internalMapping": {
+				"SourceIP": {
+					"simple": "aa - ${type} - aa",
+					"complex": null
+				}
+			},
+			"dontMapEventToLabels": false
+		},
+		"Malware": {
+			"internalMapping": {
+				"User Name": {
+					"simple": "labels.[1].value",
+					"complex": null
+				},
+				"roles": {
+					"simple": "",
+					"complex": {
+						"root": "labels",
+						"filters": [],
+						"accessor": "[2].type",
+						"transformers": [
+							{
+								"operator": "string.replaceMatch",
+								"args": {
+									"regex": {
+										"value": {
+											"simple": "system",
+											"complex": null
+										},
+										"isContext": false
+									},
+									"replaceWith": {
+										"value": {
+											"simple": "Analyst",
+											"complex": null
+										},
+										"isContext": false
+									}
+								}
+							}
+						]
+					}
+				}
+			},
+			"dontMapEventToLabels": false
+		},
+		"Phishing": {
+			"internalMapping": {
+				"User Name": {
+					"simple": "labels.[1].value",
+					"complex": null
+				},
+				"roles": {
+					"simple": "",
+					"complex": {
+						"root": "labels",
+						"filters": [],
+						"accessor": "[2].type",
+						"transformers": [
+							{
+								"operator": "string.replaceMatch",
+								"args": {
+									"regex": {
+										"value": {
+											"simple": "system",
+											"complex": null
+										},
+										"isContext": false
+									},
+									"replaceWith": {
+										"value": {
+											"simple": "systemRegex",
+											"complex": null
+										},
+										"isContext": false
+									}
+								}
+							}
+						]
+					}
+				}
+			},
+			"dontMapEventToLabels": false
+		},
+		"Unclassified": {
+			"internalMapping": {
+				"User Name": {
+					"simple": "labels.[1].value",
+					"complex": null
+				},
+				"roles": {
+					"simple": "",
+					"complex": {
+						"root": "labels",
+						"filters": [],
+						"accessor": "[2].type",
+						"transformers": [
+							{
+								"operator": "string.replaceMatch",
+								"args": {
+									"regex": {
+										"value": {
+											"simple": "system",
+											"complex": null
+										},
+										"isContext": false
+									},
+									"replaceWith": {
+										"value": {
+											"simple": "0",
+											"complex": null
+										},
+										"isContext": false
+									}
+								}
+							}
+						]
+					}
+				}
+			},
+			"dontMapEventToLabels": false
+		}
+	},
+	"unclassifiedCases": {},
+	"incidentSamples": [],
+	"custom": true,
+	"transformer": {
+		"simple": "",
+		"complex": {
+			"root": "type",
+			"filters": [],
+			"accessor": "",
+			"transformers": [
+				{
+					"operator": "string.toUpperCase",
+					"args": {}
+				}
+			]
+		}
+	},
+	"keyTypeMap": {
+		"MALWARE": "Exploit",
+		"PHISHING": "Exfiltration",
+		"UNCLASSIFIED": "DoS"
+	},
+	"brandName": "Sample Incident Generator",
+	"instanceName": "22"
+}
