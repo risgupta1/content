@@ -132,6 +132,7 @@ def __create_incident_with_playbook(client, name, playbook_id):
         print_error(str(err))
 
     response_json = r.json()
+    print(response_json)#~~~~~
     inc_id = response_json['id']
 
     # get incident
