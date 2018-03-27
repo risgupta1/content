@@ -16,13 +16,16 @@ for i in `seq 0 4`; do
     if [[ $(echo "$TEMP" | jq ".[$i].build_parameters") == "null" ]]; then
         echo here2
         ARTIFACTS_BUILD_NUM=$(echo "$TEMP" | jq ".[$i].build_num")
+        echo here3
         break
     fi
 done
 
 # ARTIFACT_BUILD_NUM=$(echo "$TEMP" | jq '.[0].build_num')
 
-SERVER_DOWNLOAD_LINK=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR} | jq '.[].url' -r | grep demistoserver | grep /0/)
+TEMP=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR} | jq '.[].url' -r)
+echo "$TEMP"
+SERVER_DOWNLOAD_LINK=$(echo "$TEMP" | grep demistoserver | grep /0/)
 
 echo "Getting server artifact for build: ${ARTIFACT_BUILD_NUM}"
 echo "SERVER_DOWNLOAD_LINK = ${SERVER_DOWNLOAD_LINK}"
