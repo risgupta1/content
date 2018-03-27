@@ -141,6 +141,7 @@ def __create_incident_with_playbook(client, name, playbook_id):
     print_color(LOG_COLORS.GREEN, str(incidents))
     while incidents['total'] != 1:
         incidents = client.SearchIncidents(0, 50, 'id:' + inc_id)
+        print_color(LOG_COLORS.GREEN, 'in while: %s' % (incidents, ))
         if time.time() > timeout:
             print_error('failed to get incident with id:' + inc_id)
             return False
