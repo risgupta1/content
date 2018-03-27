@@ -12,8 +12,9 @@ ARTIFACTS_BUILD_NUM=
 for i in `seq 0 4`; do
     echo "build $i:"
     echo $(echo "$TEMP" | jq ".[$i]")
-
-    if [[ $(echo "$TEMP" | jq ".[$i].build_parameters") == null ]]; then
+    echo here
+    if [[ $(echo "$TEMP" | jq ".[$i].build_parameters") == "null" ]]; then
+        echo here2
         ARTIFACTS_BUILD_NUM=$(echo "$TEMP" | jq ".[$i].build_num")
         break
     fi
