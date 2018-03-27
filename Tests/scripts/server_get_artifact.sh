@@ -13,7 +13,9 @@ ARTIFACT_BUILD_NUM=$(echo "$TEMP" | jq '.[0].build_num')
 
 echo "in between curls"
 
-SERVER_DOWNLOAD_LINK=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR} | jq '.[].url' -r | grep demistoserver | grep /0/)
+TEMP=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR} | jq '.[].url' -r)
+echo "\n\n\n $TEMP \n\n\n"
+SERVER_DOWNLOAD_LINK=$(echo "$TEMP" | grep demistoserver | grep /0/)
 
 echo "Getting server artifact for build: ${ARTIFACT_BUILD_NUM}"
 echo "SERVER_DOWNLOAD_LINK = ${SERVER_DOWNLOAD_LINK}"
