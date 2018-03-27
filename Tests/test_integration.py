@@ -2,7 +2,7 @@ import time
 from pprint import pformat
 import uuid
 import urllib
-from test_utils import print_error
+from test_utils import print_error, print_color, LOG_COLORS
 
 # ----- Constants ----- #
 DEFAULT_TIMEOUT = 60
@@ -137,7 +137,8 @@ def __create_incident_with_playbook(client, name, playbook_id):
     incidents = client.SearchIncidents(0, 50, 'id:' + inc_id)
 
     # poll up to 1 second
-    timeout = time.time() + 10
+    timeout = time.time() + 20
+    print_color(LOG_COLORS.GREEN, str(incidents))
     while incidents['total'] != 1:
         incidents = client.SearchIncidents(0, 50, 'id:' + inc_id)
         if time.time() > timeout:
