@@ -8,16 +8,16 @@ TOKEN_ATTR="circle-token=$SERVER_CI_TOKEN"
 echo "Getting latest build num"
 TEMP=$(curl -s -H "$ACCEPT_TYPE" "$SERVER_API_URI/tree/master?limit=5&filter=successful&$TOKEN_ATTR")
 
-ARTIFACTS_BUILD_NUM=
+ARTIFACT_BUILD_NUM=
 for i in `seq 0 4`; do
     if [[ $(echo "$TEMP" | jq ".[$i].build_parameters") == "null" ]]; then
-        ARTIFACTS_BUILD_NUM=$(echo "$TEMP" | jq ".[$i].build_num")
+        ARTIFACT_BUILD_NUM=$(echo "$TEMP" | jq ".[$i].build_num")
         break
     fi
 done
 
 # ARTIFACT_BUILD_NUM=$(echo "$TEMP" | jq '.[0].build_num')
-echo $ARTIFACTS_BUILD_NUM
+echo $ARTIFACT_BUILD_NUM
 echo "accessing ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR}"
 
 TEMP=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR})
