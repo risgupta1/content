@@ -10,6 +10,9 @@ TEMP=$(curl -s -H "$ACCEPT_TYPE" "$SERVER_API_URI/tree/master?limit=5&filter=suc
 
 ARTIFACTS_BUILD_NUM=
 for i in `seq 0 4`; do
+    echo "build $i:"
+    echo $(echo "$TEMP" | jq ".[$i]")
+
     if [[ $(echo "$TEMP" | jq ".[$i].build_parameters") == null ]]; then
         ARTIFACTS_BUILD_NUM=$(echo "$TEMP" | jq ".[$i].build_num")
         break
