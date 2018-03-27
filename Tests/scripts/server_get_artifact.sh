@@ -10,19 +10,15 @@ TEMP=$(curl -s -H "$ACCEPT_TYPE" "$SERVER_API_URI/tree/master?limit=5&filter=suc
 
 ARTIFACTS_BUILD_NUM=
 for i in `seq 0 4`; do
-    echo "build $i:"
-    echo $(echo "$TEMP" | jq ".[$i]")
-    echo here
     if [[ $(echo "$TEMP" | jq ".[$i].build_parameters") == "null" ]]; then
-        echo here2
         ARTIFACTS_BUILD_NUM=$(echo "$TEMP" | jq ".[$i].build_num")
-        echo here3
         break
     fi
 done
 
 # ARTIFACT_BUILD_NUM=$(echo "$TEMP" | jq '.[0].build_num')
 echo $ARTIFACTS_BUILD_NUM
+echo "accessing ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR}"
 
 TEMP=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR})
 echo "$TEMP"
