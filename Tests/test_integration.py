@@ -2,7 +2,7 @@ import time
 from pprint import pformat
 import uuid
 import urllib
-from test_utils import print_error, print_color, LOG_COLORS
+from test_utils import print_error
 
 # ----- Constants ----- #
 DEFAULT_TIMEOUT = 60
@@ -127,6 +127,7 @@ def __create_incident_with_playbook(client, name, playbook_id):
     try:
         r = client.CreateIncident(name, None, None, None, None,
                          None, None, **kwargs)
+        print('error json: %s' % (r.content))#~~~~~~
     except RuntimeError as err:
         print_error(str(err))
 
@@ -138,10 +139,10 @@ def __create_incident_with_playbook(client, name, playbook_id):
 
     # poll up to 1 second
     timeout = time.time() + 20
-    print_color(LOG_COLORS.GREEN, str(incidents))
+    print(incidents)#~~~~~~
     while incidents['total'] != 1:
         incidents = client.SearchIncidents(0, 50, 'id:' + inc_id)
-        print_color(LOG_COLORS.GREEN, 'in while: %s' % (incidents, ))
+        print('in while: %s' % (incidents, ))#~~~~~~
         if time.time() > timeout:
             print_error('failed to get incident with id:' + inc_id)
             return False
