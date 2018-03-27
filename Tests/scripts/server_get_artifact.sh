@@ -16,13 +16,12 @@ for i in `seq 0 4`; do
     fi
 done
 
-# ARTIFACT_BUILD_NUM=$(echo "$TEMP" | jq '.[0].build_num')
-echo $ARTIFACT_BUILD_NUM
-echo "accessing ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR}"
+if [[ "$ARTIFACT_BUILD_NUM" = "" ]]; then
+    echo "couldn't find successful build"
+    exit(1)
+done
 
-TEMP=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR})
-echo "$TEMP"
-SERVER_DOWNLOAD_LINK=$(echo "$TEMP" | jq '.[].url' -r | grep demistoserver | grep /0/)
+SERVER_DOWNLOAD_LINK=$(curl -s -H "$ACCEPT_TYPE" ${SERVER_API_URI}/${ARTIFACT_BUILD_NUM}/artifacts?${TOKEN_ATTR} | jq '.[].url' -r | grep demistoserver | grep /0/)
 
 echo "Getting server artifact for build: ${ARTIFACT_BUILD_NUM}"
 echo "SERVER_DOWNLOAD_LINK = ${SERVER_DOWNLOAD_LINK}"
