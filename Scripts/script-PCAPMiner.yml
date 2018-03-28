@@ -2,7 +2,6 @@ commonfields:
   id: PCAPMiner
   version: -1
 name: PCAPMiner
-releaseNotes: set Utility tag
 script: |
   #!/usr/bin/env python2.7
   # -*- coding: utf8 -*-
@@ -61,7 +60,7 @@ script: |
   demisto.results({'Type': entryTypes['note'], 'Contents': pyResults, 'EntryContext': {'pcap_results': pyResults}, 'ContentsFormat': formats['json'], 'HumanReadable': displayData})
 type: python
 tags:
-- Utility
+- Utilities
 - file
 - pcap
 comment: PCAPMiner is a tool to parse PCAP files and will return things like extracted
